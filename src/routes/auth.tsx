@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/seefaa/app-shell";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: z.object({ mode: z.enum(["signin", "signup", "forgot"]).optional() }),
+  validateSearch: z.object({ mode: z.enum(["signin", "signup", "forgot"]).optional() }).passthrough(),
   head: () => ({
     meta: [
       { title: "Sign in — SEEFAA" },
@@ -71,11 +71,34 @@ function AuthPage() {
   }, [navigate]);
 
   async function google() {
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/auth` });
-    if (r.error) return toast.error(r.error.message ?? "Google sign-in failed");
-    if (r.redirected) return;
-    const { data } = await supabase.auth.getSession();
-    if (data.session) navigate({ to: "/dashboard" });
+    setBusy(true);
+    try {
+      const isLovablePreview =
+        typeof window !== "undefined" &&
+        ["lovableproject.com", "lovable.app", "gpt-eng.com", "lovableproject-dev.com"].some((d) =>
+          window.location.hostname.endsWith(d)
+        );
+
+      if (isLovablePreview) {
+        const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/auth` });
+        if (r.error) return toast.error(r.error.message ?? "Google sign-in failed");
+        if (r.redirected) return;
+        const { data } = await supabase.auth.getSession();
+        if (data.session) navigate({ to: "/dashboard" });
+      } else {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${window.location.origin}/dashboard`,
+          },
+        });
+        if (error) throw error;
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

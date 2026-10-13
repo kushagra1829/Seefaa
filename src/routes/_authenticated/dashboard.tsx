@@ -13,7 +13,7 @@ import { activeSeconds, daysBetween, fmtDate, fmtHours, isoDate, studyPhase, add
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  validateSearch: z.object({ welcome: z.boolean().optional() }),
+  validateSearch: z.object({ welcome: z.boolean().optional() }).passthrough(),
   head: () => ({ meta: pageMeta("Dashboard — SEEFAA", "Your CFA Level I day at a glance.") }),
   component: Dashboard,
 });
